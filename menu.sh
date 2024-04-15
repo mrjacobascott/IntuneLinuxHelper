@@ -1,7 +1,7 @@
 #! /bin/bash
 # Create a menu of actions to perform in the VM
 menu(){
-	echo Choose an option by entering the number from the below list
+	echo "Choose an option by entering the number from the below list"
 	echo "1-  Edge app-- Install, Update, or Uninstall"
 	echo "2-  Intune app-- Install, Update, or Uninstall"
 	echo "3-  Display UserID, Intune Device ID, Entra Device ID, "
@@ -67,11 +67,11 @@ tips(){
 
 edgeApp(){
 	breaker
-	echo Choose an option by entering the number from the below list
-	echo 1- Install the Edge app
-	echo 2- Update the Edge app
-	echo 3- Uninstall the Edge app
-	echo Q- Quit
+	echo "Choose an option by entering the number from the below list"
+	echo "1- Install the Edge app"
+	echo "2- Update the Edge app"
+	echo "3- Uninstall the Edge app"
+	echo "Q- Quit"
 	echo
 	read -n 1 -p "Enter selection: " reply
 	echo 
@@ -106,7 +106,7 @@ edgeInstall(){
 	sudo apt install microsoft-edge-stable -y
 	echo
 	echo
-	echo Edge installation complete
+	echo "Edge installation complete"
 	microsoft-edge-stable --version
 	sleep 2
 	breaker
@@ -120,8 +120,8 @@ edgeInstall(){
 
 edgeUpdate(){
 	breaker
-	echo This will check to see if an update is available for the
-	echo Edge app and install it if available. Starting version: 
+	echo "This will check to see if an update is available for the"
+	echo "Edge app and install it if available. Starting version:"
 	if command -v microsoft-edge-stable&> /dev/null; then
 		microsoft-edge-stable --version
 		echo
@@ -129,11 +129,11 @@ edgeUpdate(){
 		sudo apt update -y
 		sudo apt-get dist-upgrade -y
 		sleep 2
-		echo Completed. Version now:
+		echo "Completed. Version now:"
 		microsoft-edge-stable --version
 	else
-		echo Microsoft Edge is NOT installed. Edge MUST be installed
-		echo for Intune enrollment to be successful.
+		echo "Microsoft Edge is NOT installed. Edge MUST be installed"
+		echo "for Intune enrollment to be successful."
 	fi
 	breaker
 	edgeApp
@@ -141,11 +141,11 @@ edgeUpdate(){
 
 edgeRemove(){
 	breaker
-	echo Uninstalling the Edge app
+	echo "Uninstalling the Edge app"
 	sudo apt remove microsoft-edge-stable -y
 	sudo apt purge microsoft-edge-stable -y
 	echo
-	echo Uninstall complete
+	echo "Uninstall complete"
 	breaker
 	menu
 }
@@ -153,11 +153,11 @@ edgeRemove(){
 
 intuneApp(){
 	breaker
-	echo Choose an option by entering the number from the below list
-	echo 1- Install the Intune app
-	echo 2- Update the Intune app
-	echo 3- Uninstall the Intune app and remove device registration
-	echo Q- Quit
+	echo "Choose an option by entering the number from the below list"
+	echo "1- Install the Intune app"
+	echo "2- Update the Intune app"
+	echo "3- Uninstall the Intune app and remove device registration"
+	echo "Q- Quit"
 	echo
 	read -n 1 -p "Enter selection: " reply
 	echo 
@@ -238,7 +238,7 @@ intuneInstall(){
 		echo
 		# setting the intune app as a favorite so it's easy to find
 		gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'intune-portal.desktop']"
-		echo Complete. Restarting in 5 seconds.
+		echo "Complete. Restarting in 5 seconds."
 		sleep 5
 		reboot
 	else
@@ -250,8 +250,8 @@ intuneInstall(){
 
 intuneUpdate(){
 	breaker
-	echo This will check to see if an update is available for the
-	echo Intune and install it if available. Starting version: 
+	echo "This will check to see if an update is available for the"
+	echo "Intune and install it if available. Starting version: "
 	if command -v intune-portal&> /dev/null; then
 		intune-portal --version
 		echo
@@ -260,12 +260,12 @@ intuneUpdate(){
 		sudo apt-get dist-upgrade -y
 		sleep 2
 		echo
-		echo Completed. Version now: 
+		echo "Completed. Version now: "
 		intune-portal --version
 		breaker
 		menu
 	else
-		echo Microsoft Intune app is not installed. Returning...
+		echo "Microsoft Intune app is not installed. Returning..."
 		breaker
 		menu
 	fi
@@ -273,9 +273,9 @@ intuneUpdate(){
 
 intuneRemove(){
 	breaker
-	echo Selected remove the Intune app and device registration
-	echo Note- This will not remove the objects from the Entra/Intune portals
-	echo This only removes the enrollment locally from the device
+	echo "Selected remove the Intune app and device registration"
+	echo "Note- This will not remove the objects from the Entra/Intune portals"
+	echo "This only removes the enrollment locally from the device"
 	sleep 3
 	#uninstall the intune app
 	sudo apt remove intune-portal -y
@@ -294,14 +294,14 @@ intuneRemove(){
 	secret-tool clear name LinuxBrokerRegularUserSecretKey
 	sleep 3
 	echo
-	echo Completed.
+	echo "Completed."
 	breaker
 	menu
 }
 
 edgeLogs(){
 	breaker
-	echo Triggering Edge log upload
+	echo "Triggering Edge log upload"
 	sudo /opt/microsoft/microsoft-identity-diagnostics/scripts/collect_logs
 	breaker
 	menu
@@ -310,23 +310,22 @@ edgeLogs(){
 
 jourlogs(){
 	breaker
-	echo Collecting journalctl user and system identity broker logs. 
-	echo You will be able to find them on the desktop
+	echo "Collecting journalctl user and system identity broker logs. "
+	echo "You will be able to find them on the desktop"
 	journalctl --user -u microsoft-identity-broker.service --since today > ~/Desktop/journalctlUserlogs.txt
 	journalctl --system -u microsoft-identity-broker.service --since today > ~/Desktop/journalctlSystemlogs.txt
-	echo Done
+	echo "Done"
 	breaker
 	menu
 }
 
 encryptCheck(){
 	breaker
-	echo If the response after the sudo shows no devices found, then the 
-	echo hard drive is not currently encrypted. Any other result
-	echo indicates at least partial encryption is present
+	echo "If the response after the sudo shows no devices found, then the "
+	echo "hard drive is not currently encrypted. Any other result"
+	echo "indicates at least partial encryption is present"
 	echo
 	sudo dmsetup status
-	
 	breaker
 	sleep 2
 	menu
@@ -349,7 +348,6 @@ machdata(){
 
 uddata(){
 	breaker
-	
 	cat ~/.config/intune/registration.toml | while read line;
 	do
 		if [[ "$line" = account* ]]; then
@@ -366,7 +364,6 @@ uddata(){
 			tid=$(echo "${line}" | awk '{ print substr($0, length($0) - 36) }')
 			echo "TenantID:      \"${tid}"
 		fi 
-		#echo $line
 	done
 	breaker
 	sleep 2
@@ -387,8 +384,8 @@ swversions(){
 	elif command -v microsoft-edge-stable&> /dev/null; then
 		microsoft-edge-stable --version
 	else
-		echo Microsoft Edge is NOT installed. Edge MUST be installed
-		echo for Intune enrollment to be successful
+		echo "Microsoft Edge is NOT installed. Edge MUST be installed"
+		echo "for Intune enrollment to be successful"
 		echo 
 		echo "Would you like to install the Edge app now? (Y/N)"
 		read -n 1 -p "Enter selection: " reply
@@ -434,6 +431,6 @@ swversions(){
 	menu
 }
 
-echo Welcome to the Intune Linux Assistance Tool
+echo "Welcome to the Intune Linux Assistance Tool"
 breaker
 menu

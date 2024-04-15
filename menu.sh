@@ -4,16 +4,15 @@ menu(){
 	echo Choose an option by entering the number from the below list
 	echo "1-  Edge app-- Install, Update, or Uninstall"
 	echo "2-  Intune app-- Install, Update, or Uninstall"
-	echo 3- 
-	echo "4-  Display relevant software versions"
-	echo "5-  Display enforced password requirements"
-	echo "6-  Display UserID, Intune Device ID, Entra Device ID, "
+	echo "3-  Display UserID, Intune Device ID, Entra Device ID, "
 	echo "    and Tenant ID for the enrollment"
-	echo "7-  Display hardware and OS software information"
-	echo "8-  Check encryption status"
-	echo "9-  Collect identity broker service logs locally"
-	echo "10- Upload identity broker, Intune, and Edge logs to Microsoft support"
-
+	echo "4-  Display Microsoft software versions"
+	echo "5-  Display hardware and OS software information"
+	echo "6-  Check encryption status"
+	echo "7-  Collect identity broker service logs locally"
+	echo "8- Upload identity broker, Intune, and Edge logs to Microsoft support"
+	echo
+	echo "T- Tips"
 	echo "Q-  Quit"
 	echo
 	read -p "Enter selection: " reply
@@ -23,21 +22,19 @@ menu(){
 	elif  [ "$reply" = "2" ]; then
 		intuneApp	
 	elif  [ "$reply" = "3" ]; then
-		menu
+		uddata
 	elif  [ "$reply" = "4" ]; then
 		swversions
 	elif  [ "$reply" = "5" ]; then
-		pwcheck
-	elif  [ "$reply" = "6" ]; then
-		uddata
-	elif [ "$reply" = "7" ]; then
 		machdata
-	elif [ "$reply" = "8" ]; then
+	elif  [ "$reply" = "6" ]; then
 		encrypt
-	elif [ "$reply" = "9" ]; then
+	elif [ "$reply" = "7" ]; then
 		jourlogs
-	elif [ "$reply" = "10" ]; then
+	elif [ "$reply" = "8" ]; then
 		edgeLogs
+	elif  [ "$reply" = "T" ] || [ "$reply" = "t" ]; then
+		tips
 	elif  [ "$reply" = "Q" ] || [ "$reply" = "q" ]; then
 		echo "Exiting"
 		sleep 1
@@ -47,6 +44,21 @@ menu(){
 		echo
 		menu
 	fi 
+}
+
+tips(){
+	breaker
+	echo "https://learn.microsoft.com/mem/intune/user-help/enroll-device-linux"
+	echo "has the most up-to-date information. Basic info to know:"
+	echo "- Intune enrollment is supported on: "
+	echo "--- Ubuntu Desktop 20.04 LTS and 22.04 LTS with GNOME desktop"
+	echo "- Microsoft Edge 102.X+ MUST be installed for enrollment to succeed"
+	echo "--- You do not have to sign in to Edge for enrollment to succeed"
+	echo "- All enrollments will be considered corporate"
+	echo "- When in doubt, make sure both the Edge and Intune apps are up-to-date"
+	breaker
+	sleep 3
+	menu
 }
 
 edgeApp(){
@@ -79,7 +91,7 @@ edgeApp(){
 edgeInstall(){
 	breaker
 	echo "Starting Edge installation"
-	sudo apt install curl gpg
+	sudo apt install curl gpg -y
 	curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
 	sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
 
@@ -165,7 +177,7 @@ intuneInstall(){
 	echo 
 	if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
 		echo "Starting installation"
-		sudo apt install curl gpg
+		sudo apt install curl gpg -y
 		curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
 		sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
 
@@ -272,6 +284,7 @@ encrypt(){
 	echo If the response after the sudo shows no devices found, then the 
 	echo hard drive is not currently encrypted. Any other result
 	echo indicates at least partial encryption is present
+	echo
 	sudo dmsetup status
 	
 	breaker
@@ -340,16 +353,6 @@ swversions(){
 		echo for Intune enrollment to be successful
 		echo Download the needed version via the Microsoft website
 	fi
-
-	breaker
-	sleep 2
-	menu
-}
-
-pwcheck(){
-	breaker
-	
-	sed -n '25p;26q' /etc/pam.d/common-password
 
 	breaker
 	sleep 2

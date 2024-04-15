@@ -1,6 +1,6 @@
 #! /bin/bash
-# Create a menu of actions to perform in the VM
 menu(){
+	# Create a menu of actions to select from and perform
 	echo "Choose an option by entering the number from the below list"
 	echo "1-  Edge app-- Install, Update, or Uninstall"
 	echo "2-  Intune app-- Install, Update, or Uninstall"
@@ -15,31 +15,44 @@ menu(){
 	echo "T- Tips"
 	echo "Q-  Quit"
 	echo
+	#request response from user, allows a single character
 	read -n 1 -p "Enter selection: " reply
 	echo 
+	#determining what was entered
 	if [ "$reply" = "1" ]; then
+		#edge app menu
 		edgeApp
 	elif  [ "$reply" = "2" ]; then
+		#intune app menu
 		intuneApp	
 	elif  [ "$reply" = "3" ]; then
+		#get userID, Intune deviceID, Entra device ID, and tenant ID
 		uddata
 	elif  [ "$reply" = "4" ]; then
+		#display Edge and Intune software versions
 		swversions
 	elif  [ "$reply" = "5" ]; then
+		#display hardware and software information
 		machdata
 	elif  [ "$reply" = "6" ]; then
+		#check for disk encryption being enabled
 		encryptCheck
 	elif [ "$reply" = "7" ]; then
+		#Collect identity broker service logs locally
 		jourlogs
 	elif [ "$reply" = "8" ]; then
+		#Upload identity broker, Intune, and Edge logs to Microsoft support
 		edgeLogs
 	elif  [ "$reply" = "T" ] || [ "$reply" = "t" ]; then
+		#display a list of tips
 		tips
 	elif  [ "$reply" = "Q" ] || [ "$reply" = "q" ]; then
+		#exit script
 		echo "Exiting"
 		sleep 1
 		exit 0
 	else 
+		#unknown response, redo
 		echo "Unrecognized response"
 		echo
 		menu
@@ -47,6 +60,7 @@ menu(){
 }
 
 tips(){
+	#display a list of tips to the user
 	breaker
 	echo "https://learn.microsoft.com/mem/intune/user-help/enroll-device-linux"
 	echo "has the most up-to-date information. Basic info to know:"
@@ -66,6 +80,7 @@ tips(){
 }
 
 edgeApp(){
+	#Ask the user if they want to install, update, or uninstall the Edge app
 	breaker
 	echo "Choose an option by entering the number from the below list"
 	echo "1- Install the Edge app"
@@ -73,13 +88,17 @@ edgeApp(){
 	echo "3- Uninstall the Edge app"
 	echo "Q- Quit"
 	echo
+	#pause for user input of 1 character
 	read -n 1 -p "Enter selection: " reply
-	echo 
+	echo
 	if [ "$reply" = "1" ]; then
+		#install Edge
 		edgeInstall "menu"
 	elif  [ "$reply" = "2" ]; then
+		#update Edge
 		edgeUpdate
 	elif  [ "$reply" = "3" ]; then
+		#uninstall Edge
 		edgeRemove
 	elif  [ "$reply" = "Q" ] || [ "$reply" = "q" ]; then
 		echo "Back to main menu"
@@ -93,53 +112,80 @@ edgeApp(){
 }
 
 edgeInstall(){
+	#kick of Edge app installation flow
 	breaker
 	echo "Starting Edge installation"
+	#install curl if not already
 	sudo apt install curl gpg -y
 	curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+	#install Microsoft signing cert(s)
 	sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
-
+	#add to apt ledger
 	sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-ubuntu-focal-prod.list'
-
+	#clear signing cert path
 	sudo rm microsoft.gpg
+	#update apt ledger
 	sudo apt update -y
+	#actually install the app
 	sudo apt install microsoft-edge-stable -y
 	echo
 	echo
 	echo "Edge installation complete"
+	#display the version that was installed
 	microsoft-edge-stable --version
 	sleep 2
 	breaker
+	#see if script flow should go back to main menu or 
+	#go back Intune app installation
 	if [ "$1" == "menu" ]; then
 		menu
 	elif [ "$2" == "installIntune" ]; then
 		installIntune	
 	fi
-
 }
 
 edgeUpdate(){
+	#update the Edge app
 	breaker
 	echo "This will check to see if an update is available for the"
 	echo "Edge app and install it if available. Starting version:"
+	#validate that Edge is even installed
 	if command -v microsoft-edge-stable&> /dev/null; then
+		#display pre-update version
 		microsoft-edge-stable --version
 		echo
 		sleep 2
+		#do the apt update
 		sudo apt update -y
 		sudo apt-get dist-upgrade -y
 		sleep 2
 		echo "Completed. Version now:"
+		#display new current version
 		microsoft-edge-stable --version
 	else
+		# Edge wasn't detected, prompt user
 		echo "Microsoft Edge is NOT installed. Edge MUST be installed"
 		echo "for Intune enrollment to be successful."
+		echo "Would you like to install the Edge app now? (Y/N)"
+		read -n 1 -p "Enter selection: " reply
+		echo 
+		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
+			#Install Edge and go back to main menu when done
+			edgeInstall "menu"
+		elif  [ "$reply" = "N" ] || [ "$reply" = "n" ]; then
+			echo "Not installing Edge"
+		else 
+			echo "Unrecognized response, back to main menu"
+			breaker
+			menu
+		fi
 	fi
 	breaker
 	edgeApp
 }
 
 edgeRemove(){
+	#uninstall Edge
 	breaker
 	echo "Uninstalling the Edge app"
 	sudo apt remove microsoft-edge-stable -y
@@ -220,17 +266,14 @@ intuneInstall(){
 		sudo apt install curl gpg -y
 		curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
 		sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
-
 		distro=$(lsb_release -rs)
 		if [[ "$distro" == "20.04" ]]; then
 			sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/20.04/prod focal main" > /etc/apt/sources.list.d/microsoft-ubuntu-focal-prod.list'
-
 		elif [[ "$distro" == "22.04" ]]; then
 			sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" > /etc/apt/sources.list.d/microsoft-ubuntu-jammy-prod.list' 
 		else
 			echo "Unable to determine if 20.04 or 22.04 distro version. Detected version: $distro"
 		fi
-		
 		sudo rm microsoft.gpg
 		sudo apt update -y
 		sudo apt install intune-portal -y
@@ -402,7 +445,6 @@ swversions(){
 			breaker
 			menu
 		fi
-		
 	fi
 	
 	if command -v intune-portal&> /dev/null; then
@@ -425,12 +467,12 @@ swversions(){
 			menu
 		fi
 	fi
-
 	breaker
 	sleep 2
 	menu
 }
 
+#what is ran on script start
 echo "Welcome to the Intune Linux Assistance Tool"
 breaker
 menu

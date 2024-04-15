@@ -10,12 +10,12 @@ menu(){
 	echo "5-  Display hardware and OS software information"
 	echo "6-  Check encryption status"
 	echo "7-  Collect identity broker service logs locally"
-	echo "8- Upload identity broker, Intune, and Edge logs to Microsoft support"
+	echo "8-  Upload identity broker, Intune, and Edge logs to Microsoft support"
 	echo
 	echo "T- Tips"
 	echo "Q-  Quit"
 	echo
-	read -p "Enter selection: " reply
+	read -n 1 -p "Enter selection: " reply
 	echo 
 	if [ "$reply" = "1" ]; then
 		edgeApp
@@ -28,7 +28,7 @@ menu(){
 	elif  [ "$reply" = "5" ]; then
 		machdata
 	elif  [ "$reply" = "6" ]; then
-		encrypt
+		encryptCheck
 	elif [ "$reply" = "7" ]; then
 		jourlogs
 	elif [ "$reply" = "8" ]; then
@@ -56,6 +56,10 @@ tips(){
 	echo "--- You do not have to sign in to Edge for enrollment to succeed"
 	echo "- All enrollments will be considered corporate"
 	echo "- When in doubt, make sure both the Edge and Intune apps are up-to-date"
+	echo "- Do not immediately try to sign in to the Intune app after a reboot"
+	echo "    The auth modules take 30-60 seconds to startup. Please wait at"
+	echo "    least 60 seconds after a reboot before attempting sign-in to the"
+	echo "    Intune app."
 	breaker
 	sleep 3
 	menu
@@ -69,10 +73,10 @@ edgeApp(){
 	echo 3- Uninstall the Edge app
 	echo Q- Quit
 	echo
-	read -p "Enter selection: " reply
+	read -n 1 -p "Enter selection: " reply
 	echo 
 	if [ "$reply" = "1" ]; then
-		edgeInstall
+		edgeInstall "menu"
 	elif  [ "$reply" = "2" ]; then
 		edgeUpdate
 	elif  [ "$reply" = "3" ]; then
@@ -103,9 +107,15 @@ edgeInstall(){
 	echo
 	echo
 	echo Edge installation complete
+	microsoft-edge-stable --version
 	sleep 2
 	breaker
-	menu
+	if [ "$1" == "menu" ]; then
+		menu
+	elif [ "$2" == "installIntune" ]; then
+		installIntune	
+	fi
+
 }
 
 edgeUpdate(){
@@ -149,7 +159,7 @@ intuneApp(){
 	echo 3- Uninstall the Intune app and remove device registration
 	echo Q- Quit
 	echo
-	read -p "Enter selection: " reply
+	read -n 1 -p "Enter selection: " reply
 	echo 
 	if [ "$reply" = "1" ]; then
 		intuneInstall
@@ -170,10 +180,40 @@ intuneApp(){
 
 intuneInstall(){
 	breaker
-	echo Selected Install the Intune app.
-	echo The machine will automatically reboot when completed
+	if command -v microsoft-edge-beta&> /dev/null; then
+		echo "Edge beta branch is installed. If Intune enrollment fails,"
+		echo "     try switching to the stable branch"
+	elif command -v microsoft-edge-dev&> /dev/null; then
+		echo "Edge dev branch is installed. If Intun enrollment fails,"
+		echo "     try switching to the stable branch"
+	elif command -v microsoft-edge-stable&> /dev/null; then
+		echo "Validated Microsoft Edge is already installed"
+	else
+		echo "Microsoft Edge is NOT installed. Edge MUST be installed"
+		echo "for Intune enrollment to be successful"
+		echo 
+		echo "Would you like to install the Edge app now? (Y/N)"
+		read -n 1 -p "Enter selection: " reply
+		echo 
+		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
+			edgeInstall "installIntune"
+		elif  [ "$reply" = "N" ] || [ "$reply" = "n" ]; then
+			echo "Not installing Edge, continuing with Intune app install"
+		else 
+			echo "Unrecognized response, back to main menu"
+			breaker
+			menu
+		fi
+	fi
+	
+	echo "Ready to install the Intune app"
+	echo "The machine will automatically reboot when install is completed"
+	echo "Do not immediately try to sign in to the Intune app after the reboot"
+	echo "    The auth modules take 30-60 seconds to startup. Please wait at"
+	echo "    least 60 seconds after a reboot before attempting sign-in to the"
+	echo "    Intune app."
 	echo
-	read -p "Are you sure you want to continue? [Y/N] " reply
+	read -n 1 -p "Are you sure you want to continue? [Y/N] " reply
 	echo 
 	if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
 		echo "Starting installation"
@@ -279,7 +319,7 @@ jourlogs(){
 	menu
 }
 
-encrypt(){
+encryptCheck(){
 	breaker
 	echo If the response after the sudo shows no devices found, then the 
 	echo hard drive is not currently encrypted. Any other result
@@ -336,22 +376,57 @@ uddata(){
 swversions(){
 	breaker
 
-	if command -v intune-portal&> /dev/null; then
-		intune-portal --version
-	else
-		echo Microsoft Intune app is not installed
-	fi
-
 	if command -v microsoft-edge-beta&> /dev/null; then
 		microsoft-edge-beta --version
+		echo "Edge beta branch is installed. If enrollment is failing,"
+		echo "     try switching to the stable branch"
 	elif command -v microsoft-edge-dev&> /dev/null; then
 		microsoft-edge-dev --version
+		echo "Edge dev branch is installed. If enrollment is failing,"
+		echo "     try switching to the stable branch"
 	elif command -v microsoft-edge-stable&> /dev/null; then
 		microsoft-edge-stable --version
 	else
 		echo Microsoft Edge is NOT installed. Edge MUST be installed
 		echo for Intune enrollment to be successful
-		echo Download the needed version via the Microsoft website
+		echo 
+		echo "Would you like to install the Edge app now? (Y/N)"
+		read -n 1 -p "Enter selection: " reply
+		echo 
+		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
+			edgeInstall "menu"
+		elif  [ "$reply" = "N" ] || [ "$reply" = "n" ]; then
+			echo "Not installing Edge, back to main menu"
+			breaker
+			sleep 1
+			menu
+		else 
+			echo "Unrecognized response, back to main menu"
+			breaker
+			menu
+		fi
+		
+	fi
+	
+	if command -v intune-portal&> /dev/null; then
+		intune-portal --version
+	else
+		echo "Microsoft Intune app is not installed"
+		echo "Would you like to install the Microsoft Intune app now? (Y/N)"
+		read -n 1 -p "Enter selection: " reply
+		echo 
+		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
+			intuneInstall
+		elif  [ "$reply" = "N" ] || [ "$reply" = "n" ]; then
+			echo "Not installing Intune app, back to main menu"
+			breaker
+			sleep 1
+			menu
+		else 
+			echo "Unrecognized response, back to main menu"
+			breaker
+			menu
+		fi
 	fi
 
 	breaker

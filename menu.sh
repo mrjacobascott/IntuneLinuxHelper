@@ -180,6 +180,7 @@ edgeUpdate(){
 			menu
 		fi
 	fi
+	
 	breaker
 	edgeApp
 }
@@ -188,7 +189,9 @@ edgeRemove(){
 	#uninstall Edge
 	breaker
 	echo "Uninstalling the Edge app"
+	#uninstalls the app
 	sudo apt remove microsoft-edge-stable -y
+	#purges the configs
 	sudo apt purge microsoft-edge-stable -y
 	echo
 	echo "Uninstall complete"
@@ -198,6 +201,7 @@ edgeRemove(){
 
 
 intuneApp(){
+	#loads the intune app menu
 	breaker
 	echo "Choose an option by entering the number from the below list"
 	echo "1- Install the Intune app"
@@ -225,12 +229,13 @@ intuneApp(){
 }
 
 intuneInstall(){
+	#installs the Intune app after validating Edge is already installed
 	breaker
 	if command -v microsoft-edge-beta&> /dev/null; then
 		echo "Edge beta branch is installed. If Intune enrollment fails,"
 		echo "     try switching to the stable branch"
 	elif command -v microsoft-edge-dev&> /dev/null; then
-		echo "Edge dev branch is installed. If Intun enrollment fails,"
+		echo "Edge dev branch is installed. If Intune enrollment fails,"
 		echo "     try switching to the stable branch"
 	elif command -v microsoft-edge-stable&> /dev/null; then
 		echo "Validated Microsoft Edge is already installed"
@@ -263,9 +268,13 @@ intuneInstall(){
 	echo 
 	if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
 		echo "Starting installation"
+		#installs curl if not present
 		sudo apt install curl gpg -y
+		#pulls Microsoft certs
 		curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+		#installs the certs
 		sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
+		#validates the version of the OS so it gets the right source
 		distro=$(lsb_release -rs)
 		if [[ "$distro" == "20.04" ]]; then
 			sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/20.04/prod focal main" > /etc/apt/sources.list.d/microsoft-ubuntu-focal-prod.list'
@@ -275,7 +284,9 @@ intuneInstall(){
 			echo "Unable to determine if 20.04 or 22.04 distro version. Detected version: $distro"
 		fi
 		sudo rm microsoft.gpg
+		#update apt ledger
 		sudo apt update -y
+		#install app
 		sudo apt install intune-portal -y
 		echo
 		echo
@@ -292,6 +303,7 @@ intuneInstall(){
 }
 
 intuneUpdate(){
+	#update the Intune app
 	breaker
 	echo "This will check to see if an update is available for the"
 	echo "Intune and install it if available. Starting version: "
@@ -315,6 +327,7 @@ intuneUpdate(){
 }
 
 intuneRemove(){
+	#remove the Intune app and the device registration information
 	breaker
 	echo "Selected remove the Intune app and device registration"
 	echo "Note- This will not remove the objects from the Entra/Intune portals"
@@ -343,15 +356,31 @@ intuneRemove(){
 }
 
 edgeLogs(){
+	#Trigger the Edge log upload if Edge is installed. Otherwise go to main menu
 	breaker
+	if command -v microsoft-edge-beta&> /dev/null; then
+		echo "Edge beta branch is installed. If Intune enrollment fails,"
+		echo "     try switching to the stable branch"
+	elif command -v microsoft-edge-dev&> /dev/null; then
+		echo "Edge dev branch is installed. If Intune enrollment fails,"
+		echo "     try switching to the stable branch"
+	elif command -v microsoft-edge-stable&> /dev/null; then
+		echo "Confirmed Microsoft Edge is installed"
+	else
+		echo "Microsoft Edge is NOT installed, back to main menu"
+			breaker
+			menu
+		fi
+	fi	
+	
 	echo "Triggering Edge log upload"
 	sudo /opt/microsoft/microsoft-identity-diagnostics/scripts/collect_logs
 	breaker
 	menu
 }
 
-
 jourlogs(){
+	#Collect the journal logs for the Identity service and save to desktop
 	breaker
 	echo "Collecting journalctl user and system identity broker logs. "
 	echo "You will be able to find them on the desktop"
@@ -363,6 +392,7 @@ jourlogs(){
 }
 
 encryptCheck(){
+	#check for drive encryption
 	breaker
 	echo "If the response after the sudo shows no devices found, then the "
 	echo "hard drive is not currently encrypted. Any other result"
@@ -375,13 +405,14 @@ encryptCheck(){
 }
 
 breaker(){
+	#simple line break method for the echos
 	echo
 	echo ------------------------------------------------------------
 	echo
 }
 
-
 machdata(){
+	#display information about the machine and OS
 	breaker
 	hostnamectl
 	breaker
@@ -390,6 +421,7 @@ machdata(){
 }
 
 uddata(){
+	#display the userID, IntuneDeviceID, EntraDeviceID, Tenant ID to the user
 	breaker
 	cat ~/.config/intune/registration.toml | while read line;
 	do
@@ -408,14 +440,17 @@ uddata(){
 			echo "TenantID:      \"${tid}"
 		fi 
 	done
+	
 	breaker
 	sleep 2
 	menu
 }
 
 swversions(){
+	# verify if Edge and Intune apps are installed
+	# prompt user if they are not
+	# display versions if they are
 	breaker
-
 	if command -v microsoft-edge-beta&> /dev/null; then
 		microsoft-edge-beta --version
 		echo "Edge beta branch is installed. If enrollment is failing,"
@@ -467,6 +502,7 @@ swversions(){
 			menu
 		fi
 	fi
+	
 	breaker
 	sleep 2
 	menu

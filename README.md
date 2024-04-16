@@ -6,7 +6,7 @@ It has a menu that users can step through to perform different actions without h
 - Collect logs and upload directly to Microsoft Support
 
 To be able to run this tool: 
-1. Download the main file: ```wget -O IntuneLinuxHelper.sh https://github.com/mrjacobascott/IntuneLinuxHelper/raw/main/menu.sh```
+1. Download the main file: ```wget -O IntuneLinuxHelper.sh https://aka.ms/IntuneLinuxHelper```
 2. Make the repo executable via: ```sudo chmod -R +x IntuneLinuxHelper.sh```
 3. Run IntuneLinuxHelper.sh either via terminal or right-click the file then run as a program. 
 

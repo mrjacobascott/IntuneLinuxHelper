@@ -10,6 +10,8 @@ To be able to run this tool:
 2. Make the repo executable via: ```sudo chmod -R +x IntuneLinuxHelper.sh```
 3. Run IntuneLinuxHelper.sh either via terminal or right-click the file then run as a program. 
 
+![menuPage](Screenshot.png)
+
 MIT License
 
 Copyright (c) 2024 Jacob Scott

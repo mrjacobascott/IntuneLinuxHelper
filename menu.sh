@@ -2,6 +2,7 @@
 menu(){
 	# Create a menu of actions to select from and perform
 	echo "Choose an option by entering the number from the below list"
+	echo "Note: Some options will request sudo/root access to perform" 
 	echo "1-  Edge app-- Install, Update, or Uninstall"
 	echo "2-  Intune app-- Install, Update, or Uninstall"
 	echo "3-  Display UserID, Intune Device ID, Entra Device ID, "

@@ -370,8 +370,7 @@ edgeLogs(){
 		echo "Microsoft Edge is NOT installed, back to main menu"
 			breaker
 			menu
-		fi
-	fi	
+	fi
 	
 	echo "Triggering Edge log upload"
 	sudo /opt/microsoft/microsoft-identity-diagnostics/scripts/collect_logs

@@ -224,6 +224,7 @@ edgeUpdate(){
 	fi
 	
 	breaker
+	sleep 2
 	edgeApp
 }
 
@@ -244,6 +245,7 @@ edgeRemove(){
 		echo "Uninstall complete"
 	fi
 	breaker
+	sleep 2
 	menu
 }
 
@@ -411,6 +413,7 @@ intuneUpdate(){
 		fi
 		
 		breaker
+		sleep 2
 		menu
 	fi
 }
@@ -448,6 +451,7 @@ intuneRemove(){
 	fi
 	echo
 	breaker
+	sleep 2
 	menu
 }
 
@@ -465,12 +469,14 @@ edgeLogs(){
 	else
 		echo "Microsoft Edge is NOT installed, back to main menu"
 			breaker
+			sleep 2
 			menu
 	fi
 	
 	echo "Triggering Edge log upload"
 	sudo /opt/microsoft/microsoft-identity-diagnostics/scripts/collect_logs
 	breaker
+	sleep 2
 	menu
 }
 
@@ -483,17 +489,19 @@ jourlogs(){
 	journalctl --system -u microsoft-identity-broker.service --since today > ~/Desktop/journalctlSystemlogs.txt
 	echo "Done"
 	breaker
+	sleep 2
 	menu
 }
 
 encryptCheck(){
 	#check for drive encryption
 	breaker
-	echo "If the response after the sudo shows no devices found, then the "
-	echo "hard drive is not currently encrypted. Any other result"
-	echo "indicates at least partial encryption is present"
-	echo
-	sudo dmsetup status
+	encStatus=$(sudo dmsetup status)
+	if [[ "$encStatus" == *"No devices found"* ]]; then
+		echo "Encryption is not enabled"
+	else
+		echo "$output"
+	fi
 	breaker
 	sleep 2
 	menu
@@ -518,23 +526,28 @@ machdata(){
 uddata(){
 	#display the userID, IntuneDeviceID, EntraDeviceID, Tenant ID to the user
 	breaker
-	cat ~/.config/intune/registration.toml | while read line;
-	do
-		if [[ "$line" = account* ]]; then
-			aid=$(echo "${line}" | awk '{ print substr($0, length($0) - 37) }')
-			echo "AccountID:     ${aid}"
-		
-		elif  [[ "$line" = device* ]]; then
-			did=$(echo "${line}" | awk '{ print substr($0, length($0) - 37) }')
-			echo "DeviceID:      ${did}"
-		elif  [[ "$line" = aad* ]]; then
-			aadid=$(echo "${line}" | awk '{ print substr($0, length($0) - 37) }')
-			echo "EntraDeviceID: ${aadid}"
-		elif  [[ "$line" = authority* ]]; then
-			tid=$(echo "${line}" | awk '{ print substr($0, length($0) - 36) }')
-			echo "TenantID:      \"${tid}"
-		fi 
-	done
+	FILE=~/.config/intune/registration.toml
+	if [ -f "$FILE" ]; then
+		cat ~/.config/intune/registration.toml | while read line;
+		do
+			if [[ "$line" = account* ]]; then
+				aid=$(echo "${line}" | awk '{ print substr($0, length($0) - 37) }')
+				echo "AccountID:     ${aid}"
+			
+			elif  [[ "$line" = device* ]]; then
+				did=$(echo "${line}" | awk '{ print substr($0, length($0) - 37) }')
+				echo "DeviceID:      ${did}"
+			elif  [[ "$line" = aad* ]]; then
+				aadid=$(echo "${line}" | awk '{ print substr($0, length($0) - 37) }')
+				echo "EntraDeviceID: ${aadid}"
+			elif  [[ "$line" = authority* ]]; then
+				tid=$(echo "${line}" | awk '{ print substr($0, length($0) - 36) }')
+				echo "TenantID:      \"${tid}"
+			fi 
+		done
+	else
+		echo "Device is not enrolled in Intune"
+	fi 
 	
 	breaker
 	sleep 2

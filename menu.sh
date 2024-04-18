@@ -437,6 +437,7 @@ intuneRemove(){
 	systemctl --user clean --what=state --what=configuration --what=runtime microsoft-identity-broker
 
 	#clean up secrets
+	dpkg -s libsecret-tools 2>/dev/null >/dev/null || sudo apt-get install libsecret-tools -y
 	secret-tool search --all env 60a144fbac31dfcf32034c112a615303b0e55ecad3a7aa61b7982557838908dc
 	secret-tool clear env 60a144fbac31dfcf32034c112a615303b0e55ecad3a7aa61b7982557838908dc
 	secret-tool clear name LinuxBrokerSystemUserSecretKey

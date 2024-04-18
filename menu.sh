@@ -370,8 +370,9 @@ intuneInstall(){
 		fi
 		
 	else
-		echo "Returning to menu"
+		echo "Did not install Intune app. Returning to menu"
 		sleep 2
+		breaker
 		menu
 	fi
 }

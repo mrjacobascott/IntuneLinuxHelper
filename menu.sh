@@ -1,4 +1,9 @@
 #! /bin/bash
+#Intune Linux Helper
+#Licensed under: MIT License
+#For more information, see LICENSE file in the source repo https://github.com/mrjacobascott/IntuneLinuxHelper/tree/main
+#Copyright (c) 2024 Jacob Scott
+
 menu(){
 	# Create a menu of actions to select from and perform
 	echo "Choose an option by entering the number from the below list"
@@ -18,6 +23,8 @@ menu(){
 	echo
 	#request response from user, allows a single character
 	read -n 1 -p "Enter selection: " reply
+	echo
+	echo "Selected: $reply"
 	echo 
 	#determining what was entered
 	if [ "$reply" = "1" ]; then
@@ -92,6 +99,8 @@ edgeApp(){
 	#pause for user input of 1 character
 	read -n 1 -p "Enter selection: " reply
 	echo
+	echo "Selected: $reply"
+	echo
 	if [ "$reply" = "1" ]; then
 		#install Edge
 		edgeInstall "menu"
@@ -112,15 +121,39 @@ edgeApp(){
 	fi 
 }
 
+checkCurl(){
+		MICROSOFT_KEY_URL="https://packages.microsoft.com/keys/microsoft.asc"
+	httpResponse=$(curl --write-out "%{http_code}" --silent --output /dev/null "$MICROSOFT_KEY_URL")
+	if [ $? -eq 0 ] && [ "$httpResponse" -eq 200 ] || [ "$httpResponse" -eq 204 ]; then
+		echo "Curl is successful with response: $httpResponse"
+		curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+		#install Microsoft signing cert(s)
+		sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
+		return 0
+	else
+		echo
+		echo "Curl is failing to get the Microsoft GPG key"
+		echo "HTTP response code: $httpResponse"
+		echo "Manually check network connectivity to https://packages.microsoft.com/keys/microsoft.asc"
+		echo "Before trying again"
+		echo "Aborting back to main menu"
+		breaker
+		return 1
+	fi
+}
+
 edgeInstall(){
 	#kick of Edge app installation flow
 	breaker
 	echo "Starting Edge installation"
 	#install curl if not already
 	sudo apt install curl gpg -y
-	curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-	#install Microsoft signing cert(s)
-	sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
+	#check if curl is successful, abort if not
+	if checkCurl $1; then
+		echo "Curl success"
+	else
+		menu
+	fi
 	#add to apt ledger
 	sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/edge stable main" > /etc/apt/sources.list.d/microsoft-ubuntu-focal-prod.list'
 	#clear signing cert path
@@ -132,15 +165,21 @@ edgeInstall(){
 	echo
 	echo
 	echo "Edge installation complete"
-	#display the version that was installed
-	microsoft-edge-stable --version
+	#verify Edge install was successful
+	if command -v microsoft-edge-stable&> /dev/null; then
+		#display new current version
+		microsoft-edge-stable --version
+	else
+		echo "Edge installation failed"
+		echo "Review installation logs above and/or try manual installation"
+	fi
 	sleep 2
 	breaker
 	#see if script flow should go back to main menu or 
 	#go back Intune app installation
 	if [ "$1" == "menu" ]; then
 		menu
-	elif [ "$2" == "installIntune" ]; then
+	elif [ "$1" == "installIntune" ]; then
 		installIntune	
 	fi
 }
@@ -169,6 +208,8 @@ edgeUpdate(){
 		echo "for Intune enrollment to be successful."
 		echo "Would you like to install the Edge app now? (Y/N)"
 		read -n 1 -p "Enter selection: " reply
+		echo
+		echo "Selected: $reply"
 		echo 
 		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
 			#Install Edge and go back to main menu when done
@@ -195,7 +236,13 @@ edgeRemove(){
 	#purges the configs
 	sudo apt purge microsoft-edge-stable -y
 	echo
-	echo "Uninstall complete"
+	if command -v microsoft-edge-stable&> /dev/null; then
+		#display version that is still installed
+		echo "Microsoft Edge failed to uninstall. Version still installed: "
+		microsoft-edge-stable --version
+	else
+		echo "Uninstall complete"
+	fi
 	breaker
 	menu
 }
@@ -211,6 +258,8 @@ intuneApp(){
 	echo "Q- Quit"
 	echo
 	read -n 1 -p "Enter selection: " reply
+	echo
+	echo "Selected: $reply"
 	echo 
 	if [ "$reply" = "1" ]; then
 		intuneInstall
@@ -246,6 +295,8 @@ intuneInstall(){
 		echo 
 		echo "Would you like to install the Edge app now? (Y/N)"
 		read -n 1 -p "Enter selection: " reply
+		echo
+		echo "Selected: $reply"
 		echo 
 		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
 			edgeInstall "installIntune"
@@ -266,13 +317,19 @@ intuneInstall(){
 	echo "    Intune app."
 	echo
 	read -n 1 -p "Are you sure you want to continue? [Y/N] " reply
+	echo
+	echo "Selected: $reply"
 	echo 
 	if [ "$reply" = "y" ] || [ "$reply" = "Y" ]; then
 		echo "Starting installation"
 		#installs curl if not present
 		sudo apt install curl gpg -y
-		#pulls Microsoft certs
-		curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+		#check if curl is successful
+		if checkCurl $1; then
+			echo "Curl success"
+		else
+			menu
+		fi
 		#installs the certs
 		sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
 		#validates the version of the OS so it gets the right source
@@ -288,14 +345,28 @@ intuneInstall(){
 		#update apt ledger
 		sudo apt update -y
 		#install app
-		sudo apt install intune-portal -y
+		sudo apt install intune-portal -y		
 		echo
 		echo
-		# setting the intune app as a favorite so it's easy to find
-		gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'intune-portal.desktop']"
-		echo "Complete. Restarting in 5 seconds."
-		sleep 5
-		reboot
+		
+		if command -v intune-portal&> /dev/null; then
+			#display installed version
+			intune-portal --version
+			# setting the intune app as a favorite so it's easy to find
+			gsettings set org.gnome.shell favorite-apps "$(gsettings get org.gnome.shell favorite-apps | sed s/.$//), 'intune-portal.desktop']"
+			echo "Complete. Restarting in 5 seconds."
+			sleep 5
+			reboot
+		else
+			echo "Microsoft Intune app installation failed"
+			echo "Review installation logs above and/or try manual installation"
+			echo "NOT restarting the system since installation failed"
+			echo "Returning to menu"
+			breaker
+			sleep 5
+			menu
+		fi
+		
 	else
 		echo "Returning to menu"
 		sleep 2
@@ -321,7 +392,24 @@ intuneUpdate(){
 		breaker
 		menu
 	else
-		echo "Microsoft Intune app is not installed. Returning..."
+		# Intune wasn't detected, prompt user
+		echo "Microsoft Intune is NOT installed"
+		echo "Would you like to install the Intune app now? (Y/N)"
+		read -n 1 -p "Enter selection: " reply
+		echo
+		echo "Selected: $reply"
+		echo 
+		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
+			#Install Intune
+			intuneInstall 
+		elif  [ "$reply" = "N" ] || [ "$reply" = "n" ]; then
+			echo "Not installing the Intune app"
+		else 
+			echo "Unrecognized response, back to main menu"
+			breaker
+			menu
+		fi
+		
 		breaker
 		menu
 	fi
@@ -350,8 +438,15 @@ intuneRemove(){
 	secret-tool clear name LinuxBrokerSystemUserSecretKey
 	secret-tool clear name LinuxBrokerRegularUserSecretKey
 	sleep 3
+	
+	if command -v intune-portal&> /dev/null; then
+		echo "Uninstallation of the Intune app failed. Currently installed version: "
+		#display still installed version
+		intune-portal --version		
+	else
+		echo "Microsoft Intune app uninstalled successfully"
+	fi
 	echo
-	echo "Completed."
 	breaker
 	menu
 }
@@ -467,6 +562,8 @@ swversions(){
 		echo 
 		echo "Would you like to install the Edge app now? (Y/N)"
 		read -n 1 -p "Enter selection: " reply
+		echo
+		echo "Selected: $reply"
 		echo 
 		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
 			edgeInstall "menu"
@@ -488,6 +585,8 @@ swversions(){
 		echo "Microsoft Intune app is not installed"
 		echo "Would you like to install the Microsoft Intune app now? (Y/N)"
 		read -n 1 -p "Enter selection: " reply
+		echo
+		echo "Selected: $reply"
 		echo 
 		if [ "$reply" = "Y" ] || [ "$reply" = "y" ]; then
 			intuneInstall
@@ -509,6 +608,13 @@ swversions(){
 }
 
 #what is ran on script start
-echo "Welcome to the Intune Linux Assistance Tool"
-breaker
-menu
+
+#init logging
+log_file="/tmp/intunelinuxhelper.log"
+{
+	date '+[%Y-%m-%d %H:%M:%S] Starting script'
+	echo "Welcome to the Intune Linux Assistance Tool"
+	breaker
+	menu
+	date '+[%Y-%m-%d %H:%M:%S] Script exit'
+} 2>&1 | tee -a "$log_file"

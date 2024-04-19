@@ -81,7 +81,9 @@ tips(){
 	echo "- Do not immediately try to sign in to the Intune app after a reboot"
 	echo "    The auth modules take 30-60 seconds to startup. Please wait at"
 	echo "    least 60 seconds after a reboot before attempting sign-in to the"
-	echo "    Intune app."
+	echo "    Intune app. This will present sometimes as a 1001 error after"
+ 	echo "    entering your password and other times as showing a screen that"
+  	echo "    has a button for -Get the App- instead of -Register-"
 	breaker
 	sleep 3
 	menu

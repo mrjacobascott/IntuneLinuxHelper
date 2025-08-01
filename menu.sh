@@ -335,16 +335,11 @@ intuneInstall(){
 			menu
 		fi
 		#installs the certs
-		sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/ 
+		curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+		sudo install -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/
 		#validates the version of the OS so it gets the right source
-		distro=$(lsb_release -rs)
-		if [[ "$distro" == "20.04" ]]; then
-			sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/20.04/prod focal main" > /etc/apt/sources.list.d/microsoft-ubuntu-focal-prod.list'
-		elif [[ "$distro" == "22.04" ]]; then
-			sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/22.04/prod jammy main" > /etc/apt/sources.list.d/microsoft-ubuntu-jammy-prod.list' 
-		else
-			echo "Unable to determine if 20.04 or 22.04 distro version. Detected version: $distro"
-		fi
+		sudo sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/$(lsb_release -rs)/prod $(lsb_release -cs) main" >> /etc/apt/sources.list.d/microsoft-ubuntu-$(lsb_release -cs)-prod.list'
+		sudo apt update
 		sudo rm microsoft.gpg
 		#update apt ledger
 		sudo apt update -y
